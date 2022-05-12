@@ -1,179 +1,89 @@
 // ==UserScript==
-// @name         Neusta2Projektron
+// @name         Projektron Booking Tool
 // @namespace    http://tampermonkey.net/
 // @version      0.1
 // @description  try to take over the world!
 // @author       You
-// @match        https://mitarbeiter.neusta.de/*
+// @match        https://projektron.valantic.com/*
+// @icon         https://www.google.com/s2/favicons?sz=64&domain=valantic.com
 // @grant        none
-// @require      http://code.jquery.com/jquery-3.4.1.min.js
 // ==/UserScript==
+
+
 (function () {
     'use strict';
-    const regex = /^(\d\d):(\d\d)\s+(\d\d):(\d\d)\s+(\d?\d?.?\d?\d)?\s?(.*)(refine|impl|meeting)\s?(.+)$/;
-    const REFINEMENT = "refinement";
-    const IMPLEMENTATION = "implementation";
-    const MEETING = "meeting";
-    const dateRegex = /^(\d*)\.(\d*)\.(\d*)$/;
-    const keyCodes = [48, 49, 50, 51, 52, 53, 54, 55, 56, 57];
-    var DATE_PICKER = ".mat-datepicker-input";
-    var ADD_BUTTON = ".toolbar__action button";
-    var TIME_HOUR = ".ngx-timepicker__control--first input";
-    var TIME_MINUTE = ".ngx-timepicker__control--third input";
-    var HOURS = "[data-placeholder=Stunden]";
-    var PAUSE = "[data-placeholder=Pause]";
-    var COMMENT = "textarea";
-    var COMMENT_INPUT = COMMENT + "+input";
-    var DATE = "[formcontrolname='spentOn']";
-    var enableJiraBooking = true;
-    var enableJiraAutoBooking = false;
-    var currentProjectPrefixes = ["HUB", "Valantic"];
-    var currentProject = /Huber.*/i;
-    var sapCommerceGeneral = /SAP Commerce Bereich intern/i
-    // jira url should be start page in order to show overlay. #book_ is the required suffix for other plugin to work
-    var projektronUrl = "https://projektron.valantic.com/bcs/mybcs/dayeffortrecording/display?oid=1651160098716_JUser#book_";
-    const addFromTextArea = async function (entry) {
-        const match = regex.exec(entry);
-        if (match) {
-            // Add Ending Hour
-            //  document.querySelector(HOURS).value = match[1];
-            //   document.querySelector(HOURS).dispatchEvent(new Event("input"));
-            //   document.querySelector(HOURS).dispatchEvent(new Event("change"));
-            press(document.querySelectorAll(TIME_HOUR)[1], match[3].split("")[0]);
-            press(document.querySelectorAll(TIME_HOUR)[1], match[3].split("")[1]);
-            // Add Ending Minute
-            press(document.querySelectorAll(TIME_MINUTE)[1], match[4].split("")[0]);
-            press(document.querySelectorAll(TIME_MINUTE)[1], match[4].split("")[1]);
-            // Add Starting Hour
-            press(document.querySelectorAll(TIME_HOUR)[0], match[1].split("")[0]);
-            press(document.querySelectorAll(TIME_HOUR)[0], match[1].split("")[1]);
-            // Add Starting Minute
-            press(document.querySelectorAll(TIME_MINUTE)[0], match[2].split("")[0]);
-            press(document.querySelectorAll(TIME_MINUTE)[0], match[2].split("")[1]);
-            // Add Pause
-            match[5] ? document.querySelector(PAUSE).value = match[2] : console.info("no pause");
-            document.querySelector(PAUSE).dispatchEvent(new Event("input"));
-            document.querySelector(PAUSE).dispatchEvent(new Event("change"));
 
-            // Add Comment
-            var comment = match[8];
-            var projectronTicket = match[6];
-            var ticketType = match[7].toLowerCase();
-            document.querySelector(COMMENT).value = comment;
-            document.querySelector(COMMENT).dispatchEvent(new Event("input"))
-            await wait(200);
-            // Open Projekt Selection
-            document.querySelectorAll("[cdk-overlay-origin]")[1].dispatchEvent(new Event("click"))
-            await wait(300);
-            // Try to find correct project, otherwise fallback to first one
-            var projectOption = 0;
-            var allProjectOptions = document.querySelectorAll(".mat-option-text")
-            console.info(comment)
-            console.info(currentProjectPrefixes)
-            allProjectOptions.forEach(function(project, index){
-                if(currentProjectPrefixes.some(prefix=>comment.includes(prefix))){
-                    console.info(project.innerText)
-                    if(currentProject.test(project.innerText)){
-                        console.info("its a match " + project.innerText)
-                        projectOption = index;
-                    }
-                } else {
-                    if(ticketType != "" && currentProject.test(project.innerText)){
-                        projectOption = index;
-                    } else if(projectOption == 0 && sapCommerceGeneral.test(project.innerText)){
-                        projectOption = index;
-                    }
+    const successMessage = "Aufwände gebucht";
+    const MESSAGES = ".msg.affirmation";
+    const DAY_PICKER = ".calendarcontrol_datedisplay";
+    const DATE_REGEX = /^(\d{4})-(\d{2})-(\d{2})$/;
+
+    const bookTime = async function () {
+        console.log(document.referrer)
+        if (document.referrer == '') {
+            Object.defineProperty(document, "referrer", {
+                get: function () {
+                    //  return "https://mitarbeiter.neusta.de/timesheet?book_pim::refinement::Setting%20up::1.00::2022-05-12";
                 }
             });
-            // Click on found or first Project Option
-            document.querySelectorAll("mat-option")[projectOption].dispatchEvent(new Event("click"))
-            await wait(100);
-            // Click on second time option
-            var options = document.querySelectorAll("[cdk-overlay-origin]")
-            if(options.length > 2){
-                document.querySelectorAll("[cdk-overlay-origin]")[2].dispatchEvent(new Event("click"))
-                await wait(100);
-                document.querySelectorAll("mat-option")[0].dispatchEvent(new Event("click"))
-            }
-            // Open Activity Selection
-            //document.querySelectorAll("[cdk-overlay-origin]")[3].dispatchEvent(new Event("click"))
-            //await wait(300);
-            // Click on mapped index for Activtiy or else leave Selection Open for manual selection
-            if (getIndexForActivity(match[6]) >= 0) {
-                document.querySelectorAll("mat-option")[getIndexForActivity(match[6])].dispatchEvent(new Event("click"))
-            }
-            if(enableJiraBooking){
-                if(ticketType != ""){
-                    // get date of booking and parse it to required format
-                    var date = document.querySelector(DATE).value;
-                    var dateString = "";
-                    const dateMatch = dateRegex.exec(date);
-                    if(dateMatch){
-                        const days = dateMatch[1];
-                        const month = dateMatch[2];
-                        const year = dateMatch[3];
-                        if(days && month && year){
-                            dateString = year + "-" + month + "-" + days;
-                        }
-                    }
-                    // get calculated time from mitarbeiter tool, as it has same format as jira
-                    var bookedTime = document.querySelectorAll(".cdk-text-field-autofill-monitored")[2].value;
-                    // get ticket and comment if available
-                    var shortBookingNote = projectronTicket;
-                    if(ticketType != ""){
-                        if(ticketType == "refine"){
-                            shortBookingNote = shortBookingNote + "::" + REFINEMENT;
-                        } else if(ticketType == "impl"){
-                            shortBookingNote = shortBookingNote + "::" + IMPLEMENTATION;
-                        } else if(ticketType == "meeting"){
-                            shortBookingNote = shortBookingNote + "::" + MEETING;
-                        } else {
-                            shortBookingNote = shortBookingNote + "::" + "unknown ticket type";
-                        }
-                    }
-                    shortBookingNote = shortBookingNote + "::" + comment + "::" + bookedTime;
+        }
+        if (hasSuccessMessage()) {
+            window.close();
+        }
 
-                    if(dateString){
-                        shortBookingNote = shortBookingNote + "::" + dateString;
-                    }
-                    if (enableJiraAutoBooking) {
-                        shortBookingNote = shortBookingNote + ";?enableJiraAutoBooking=true";
-                    }
-                    console.log(shortBookingNote);
-                    window.history.pushState({}, null, "/timesheet?book_" + shortBookingNote );
-                    var newWindow = window.open(projektronUrl);
+        /*
+          Examlple Url:
+          Time is in hours
+          https://mitarbeiter.neusta.de/timesheet?book_Base%20Setup%20::refinement::Setting%20up::1.00::2022-05-11;
+        */
+
+
+        var hashString = document.referrer;
+        if (hashString && hashString.indexOf("?book_") != -1) {
+            hashString = hashString.substring(hashString.indexOf("?book_") + 6);
+            /*
+            ["PROJ-513::2.5","KON%20Deploy%20Orga::2.25","PROJ-3251::2.5"]
+            */
+            var autoBookEnabled = hashString.indexOf("enableJiraAutoBooking=true") != -1;
+            var entry = hashString.split("::");
+            var ticket = entry[0];
+            var ticketType = entry[1];
+            var time = entry[3].replace(".", ",");
+            var comment = "";
+            var dateStarted = "";
+            console.log(entry);
+            if (ticket) {
+                if (entry.length > 3) {
+                    comment = decodeURI(entry[2]);
                 }
+                if (entry.length > 4) {
+                    dateStarted = entry[4];
+                }
+                console.log(ticket, time);
+                chooseCorrectDay(ticket.toLowerCase(), ticketType.toLowerCase(), time, comment, dateStarted);
+            }
+
+            if (autoBookEnabled) {
+                //  window.close();
+            }
+        } else {
+            var localStorageTicket = window.localStorage.getItem('ticket');
+            var localStorageTicketType = window.localStorage.getItem('ticketType');
+            var localStorageTime = window.localStorage.getItem('time');
+            var localStorageComment = window.localStorage.getItem('comment');
+            var localStorageDateStarted = window.localStorage.getItem('dateStarted');
+
+            if (localStorageTicket != null && localStorageTicketType != null && localStorageTime != null && localStorageComment != null && localStorageDateStarted != null) {
+                // delete all items from local storage
+                window.localStorage.removeItem('ticket');
+                window.localStorage.removeItem('ticketType');
+                window.localStorage.removeItem('time');
+                window.localStorage.removeItem('comment');
+                window.localStorage.removeItem('dateStarted');
+
+                chooseCorrectDay(localStorageTicket.toLowerCase(), localStorageTicketType.toLowerCase(), localStorageTime, localStorageComment, localStorageDateStarted);
             }
         }
-    }
-    const getIndexForActivity = function (activity) {
-        /**
-         * 0 = Bug
-         * 1 = Code REview
-         * 2 = Meetings
-         * 3 = Projektleitung
-         * 4 = Sonstiges
-         * 5 = Story
-         */
-        if (activity.indexOf("Technisches Standup") >= 0) {
-            return 2;
-        }
-        if (activity.indexOf("Code Reviews") >= 0) {
-            return 1;
-        }
-        if (activity.indexOf("CUSI") >= 0){
-            return 5;
-        }
-    }
-    const isVisible = function (elSelector) {
-        const promise = new Promise((resolve, reject) => {
-            setInterval(() => {
-                if (document.querySelector(elSelector) != null) {
-                    resolve('done');
-                }
-            }, 300);
-        });
-        return promise;
     }
     const wait = function (time) {
         const promise = new Promise((resolve, reject) => {
@@ -183,26 +93,133 @@
         });
         return promise;
     }
-    const press = async function (el, key) {
-        el.dispatchEvent(new KeyboardEvent('keypress', {
-            'keyCode': keyCodes[key]
-        }));
-        await wait(10);
-    }
-    const addInputFieldIfMissing = function () {
-        window.setInterval(() => {
-            if (document.querySelector(COMMENT) && !document.querySelector("#paste")) {
-                var input = document.createElement("input");
-                input.id = "paste"
-                input.style = "width:100%;display:block; margin-top:10px;"
-                input.placeholder = "Paste Entry Here"
-                document.querySelector(COMMENT).parentElement.parentElement.parentElement.append(input)
-                input.addEventListener('blur', (event) => {
-                    addFromTextArea(event.target.value)
-                });
-            }
-        }, 100)
+
+    const saveDateInLocalStorage = async function (ticket, ticketType, time, comment, dateStarted) {
+        window.localStorage.setItem('ticket', ticket);
+        window.localStorage.setItem('ticketType', ticketType);
+        window.localStorage.setItem('time', time);
+        window.localStorage.setItem('comment', comment);
+        window.localStorage.setItem('dateStarted', dateStarted);
     }
 
-    addInputFieldIfMissing();
+    const chooseCorrectDay = async function (ticket, ticketType, time, comment, dateStarted) {
+        var datePicker = document.querySelector(DAY_PICKER);
+        var currentDate = datePicker.innerText;
+        var dateMatch = DATE_REGEX.exec(dateStarted);
+
+        console.log(dateMatch)
+        if (dateMatch) {
+            var year = dateMatch[1];
+            var month = dateMatch[2];
+            var day = dateMatch[3];
+
+            var dateStartedInCorrectFormat = day + "." + month + "." + year.substring(2);
+            if (!currentDate.includes(dateStartedInCorrectFormat)) {
+                console.log("choosing different date");
+                // open date dialog first
+                datePicker.click(function () {
+                    alert("test");
+                });
+                await wait(200);
+
+                // search correct day
+                console.log(day);
+                var days = document.querySelectorAll(".day > a");
+                console.log(days);
+                days.forEach(async function (dayElement, index) {
+                    console.log(dayElement.innerText)
+                    if (dayElement.innerText == day) {
+                        saveDateInLocalStorage(ticket, ticketType, time, comment, dateStarted);
+                        dayElement.click();
+                    }
+                });
+            } else {
+                bookWorklog(ticket.toLowerCase(), ticketType.toLowerCase(), time, comment, dateStarted);
+            }
+        }
+    }
+
+
+    const waitForSuccessMessage = async function () {
+        var messageFound = false;
+        while (!messageFound) {
+            await wait(500);
+            messageFound = hasSuccessMessage();
+        }
+    }
+
+    const hasSuccessMessage = function () {
+        var messageFound = false;
+        var messages = document.querySelectorAll(MESSAGES);
+        if (messages.length > 0) {
+            var message = messages[0].innerHTML;
+            if (message.includes(successMessage)) {
+                messageFound = true;
+            } else {
+                alert("got an message, but it was no success, please check");
+            }
+        }
+        return messageFound;
+    }
+    const addNewTimeBookingRowOrFillTimeAndComment = async function (possibleResults, index, comment, time) {
+        var taskFound = false;
+        var commentTextArea = possibleResults[index].querySelectorAll("textArea")[0];
+        if (commentTextArea.value != "") {
+            // add a new row
+            var addNewRowButton = possibleResults[index].querySelector("button[title='Zeile hinzufügen.']");
+            if (addNewRowButton) {
+                addNewRowButton.click()
+            }
+        } else {
+            possibleResults[index].querySelectorAll("textArea")[0].value = comment;
+            // paste the wasted time
+            possibleResults[index].querySelectorAll(".textfield.number")[2].value = time;
+            taskFound = true;
+        }
+        return taskFound;
+    }
+    const setCommentAndTime = async function (ticket, ticketType, comment, time) {
+        var taskOptions = document.querySelectorAll(".row.default.selectableRow");
+        var taskFound = false;
+        var newRowAdded = false;
+        var possibleResults = [];
+        taskOptions.forEach(function (task, index) {
+            // try to find the correct task
+            var projectInformationFields = task.querySelectorAll(".hover.toBlur");
+            if (projectInformationFields.length > 2) {
+                var taskName = task.querySelectorAll(".hover.toBlur")[2].innerHTML.toLowerCase();
+                if (taskName.includes(ticket) && taskName.includes(ticketType)) {
+                    possibleResults.push(task);
+                }
+            }
+        });
+
+        if (possibleResults.length == 1) {
+            taskFound = await addNewTimeBookingRowOrFillTimeAndComment(possibleResults, 0, comment, time);
+        } else if (possibleResults.length > 1) {
+            await addNewTimeBookingRowOrFillTimeAndComment(possibleResults, 0, comment, time);
+            taskFound = await addNewTimeBookingRowOrFillTimeAndComment(possibleResults, 1, comment, time);
+        }
+        return taskFound;
+    }
+    const bookWorklog = async function (ticket, ticketType, time, comment, dateStarted) {
+        console.log(ticket, ticketType, time, comment, dateStarted)
+        ticket = decodeURI(ticket);
+
+        let taskFound = await setCommentAndTime(ticket, ticketType, comment, time);
+
+        if (taskFound) {
+            // if task could be found, then submit the result
+            //document.querySelector("[data-bcs-submit-button=true]").click();
+        } else {
+            taskFound = await setCommentAndTime(ticket, ticketType, comment, time);
+            if (!taskFound) {
+                alert("no task was found");
+            } else {
+                document.querySelector("[data-bcs-submit-button=true]").click();
+            }
+        }
+    }
+    bookTime();
+
 })();
