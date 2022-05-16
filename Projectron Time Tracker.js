@@ -15,15 +15,17 @@
 
     const successMessage = "Aufwände gebucht";
     const MESSAGES = ".msg.affirmation";
+    const ERROR_MESSAGES = ".msg.error";
     const DAY_PICKER = ".calendarcontrol_datedisplay";
     const DATE_REGEX = /^(\d{4})-(\d{2})-(\d{2})$/;
+    const noTimeOnTicketTask = "no time on ticket";
 
     const bookTime = async function () {
         console.log(document.referrer)
         if (document.referrer == '') {
             Object.defineProperty(document, "referrer", {
                 get: function () {
-                    //  return "https://mitarbeiter.neusta.de/timesheet?book_pim::refinement::Setting%20up::1.00::2022-05-12";
+                   // return "https://mitarbeiter.neusta.de/timesheet?book_search%20list::refinement::Test%20automation%20booking::8.00::2022-05-16";
                 }
             });
         }
@@ -37,51 +39,52 @@
           https://mitarbeiter.neusta.de/timesheet?book_Base%20Setup%20::refinement::Setting%20up::1.00::2022-05-11;
         */
 
-
-        var hashString = document.referrer;
-        if (hashString && hashString.indexOf("?book_") != -1) {
-            hashString = hashString.substring(hashString.indexOf("?book_") + 6);
-            /*
-            ["PROJ-513::2.5","KON%20Deploy%20Orga::2.25","PROJ-3251::2.5"]
-            */
-            var autoBookEnabled = hashString.indexOf("enableJiraAutoBooking=true") != -1;
-            var entry = hashString.split("::");
-            var ticket = entry[0];
-            var ticketType = entry[1];
-            var time = entry[3].replace(".", ",");
-            var comment = "";
-            var dateStarted = "";
-            console.log(entry);
-            if (ticket) {
-                if (entry.length > 3) {
-                    comment = decodeURI(entry[2]);
+        if (!hasErrorMessage()) {
+            let hashString = document.referrer;
+            if (hashString && hashString.indexOf("?book_") != -1) {
+                hashString = hashString.substring(hashString.indexOf("?book_") + 6);
+                /*
+                ["PROJ-513::2.5","KON%20Deploy%20Orga::2.25","PROJ-3251::2.5"]
+                */
+                const autoBookEnabled = hashString.indexOf("enableJiraAutoBooking=true") != -1;
+                const entry = hashString.split("::");
+                const ticket = entry[0];
+                const ticketType = entry[1];
+                const time = entry[3].replace(".", ",");
+                let comment = "";
+                let dateStarted = "";
+                console.log(entry);
+                if (ticket) {
+                    if (entry.length > 3) {
+                        comment = decodeURI(entry[2]);
+                    }
+                    if (entry.length > 4) {
+                        dateStarted = entry[4];
+                    }
+                    console.log(ticket, time);
+                    chooseCorrectDay(ticket.toLowerCase(), ticketType.toLowerCase(), time, comment, dateStarted);
                 }
-                if (entry.length > 4) {
-                    dateStarted = entry[4];
+
+                if (autoBookEnabled) {
+                    //  window.close();
                 }
-                console.log(ticket, time);
-                chooseCorrectDay(ticket.toLowerCase(), ticketType.toLowerCase(), time, comment, dateStarted);
-            }
+            } else {
+                const localStorageTicket = window.localStorage.getItem('ticket');
+                const localStorageTicketType = window.localStorage.getItem('ticketType');
+                const localStorageTime = window.localStorage.getItem('time');
+                const localStorageComment = window.localStorage.getItem('comment');
+                const localStorageDateStarted = window.localStorage.getItem('dateStarted');
 
-            if (autoBookEnabled) {
-                //  window.close();
-            }
-        } else {
-            var localStorageTicket = window.localStorage.getItem('ticket');
-            var localStorageTicketType = window.localStorage.getItem('ticketType');
-            var localStorageTime = window.localStorage.getItem('time');
-            var localStorageComment = window.localStorage.getItem('comment');
-            var localStorageDateStarted = window.localStorage.getItem('dateStarted');
+                if (localStorageTicket != null && localStorageTicketType != null && localStorageTime != null && localStorageComment != null && localStorageDateStarted != null) {
+                    // delete all items from local storage
+                    window.localStorage.removeItem('ticket');
+                    window.localStorage.removeItem('ticketType');
+                    window.localStorage.removeItem('time');
+                    window.localStorage.removeItem('comment');
+                    window.localStorage.removeItem('dateStarted');
 
-            if (localStorageTicket != null && localStorageTicketType != null && localStorageTime != null && localStorageComment != null && localStorageDateStarted != null) {
-                // delete all items from local storage
-                window.localStorage.removeItem('ticket');
-                window.localStorage.removeItem('ticketType');
-                window.localStorage.removeItem('time');
-                window.localStorage.removeItem('comment');
-                window.localStorage.removeItem('dateStarted');
-
-                chooseCorrectDay(localStorageTicket.toLowerCase(), localStorageTicketType.toLowerCase(), localStorageTime, localStorageComment, localStorageDateStarted);
+                    chooseCorrectDay(localStorageTicket.toLowerCase(), localStorageTicketType.toLowerCase(), localStorageTime, localStorageComment, localStorageDateStarted);
+                }
             }
         }
     }
@@ -103,17 +106,17 @@
     }
 
     const chooseCorrectDay = async function (ticket, ticketType, time, comment, dateStarted) {
-        var datePicker = document.querySelector(DAY_PICKER);
-        var currentDate = datePicker.innerText;
-        var dateMatch = DATE_REGEX.exec(dateStarted);
+        const datePicker = document.querySelector(DAY_PICKER);
+        const currentDate = datePicker.innerText;
+        const dateMatch = DATE_REGEX.exec(dateStarted);
 
         console.log(dateMatch)
         if (dateMatch) {
-            var year = dateMatch[1];
-            var month = dateMatch[2];
-            var day = dateMatch[3];
+            const year = dateMatch[1];
+            const month = dateMatch[2];
+            const day = dateMatch[3];
 
-            var dateStartedInCorrectFormat = day + "." + month + "." + year.substring(2);
+            const dateStartedInCorrectFormat = day + "." + month + "." + year.substring(2);
             if (!currentDate.includes(dateStartedInCorrectFormat)) {
                 console.log("choosing different date");
                 // open date dialog first
@@ -124,7 +127,7 @@
 
                 // search correct day
                 console.log(day);
-                var days = document.querySelectorAll(".day > a");
+                const days = document.querySelectorAll(".day > a");
                 console.log(days);
                 days.forEach(async function (dayElement, index) {
                     console.log(dayElement.innerText)
@@ -139,20 +142,11 @@
         }
     }
 
-
-    const waitForSuccessMessage = async function () {
-        var messageFound = false;
-        while (!messageFound) {
-            await wait(500);
-            messageFound = hasSuccessMessage();
-        }
-    }
-
     const hasSuccessMessage = function () {
-        var messageFound = false;
-        var messages = document.querySelectorAll(MESSAGES);
+        let messageFound = false;
+        const messages = document.querySelectorAll(MESSAGES);
         if (messages.length > 0) {
-            var message = messages[0].innerHTML;
+            const message = messages[0].innerHTML;
             if (message.includes(successMessage)) {
                 messageFound = true;
             } else {
@@ -161,33 +155,61 @@
         }
         return messageFound;
     }
+    const hasErrorMessage = function () {
+        let messageFound = false;
+        const messages = document.querySelectorAll(ERROR_MESSAGES);
+        if (messages.length > 0) {
+            messageFound = true;
+        }
+        return messageFound;
+    }
     const addNewTimeBookingRowOrFillTimeAndComment = async function (possibleResults, index, comment, time) {
-        var taskFound = false;
-        var commentTextArea = possibleResults[index].querySelectorAll("textArea")[0];
+        let taskFound = false;
+        const commentTextArea = possibleResults[index].querySelectorAll("textArea")[0];
         if (commentTextArea.value != "") {
             // add a new row
-            var addNewRowButton = possibleResults[index].querySelector("button[title='Zeile hinzufügen.']");
+            const addNewRowButton = possibleResults[index].querySelector("button[title='Zeile hinzufügen.']");
             if (addNewRowButton) {
                 addNewRowButton.click()
             }
         } else {
             possibleResults[index].querySelectorAll("textArea")[0].value = comment;
-            // paste the wasted time
-            possibleResults[index].querySelectorAll(".textfield.number")[2].value = time;
+
+            // check if left time on task is possible within current booking
+            const allowedTotalHoursOnTask = Number(possibleResults[index].querySelector("[name=indicatorSumDedicatedExpense]").innerHTML.replace("h", ""));
+            let alreadyBookedHoursOnTask = 0;
+            const alreadyBookedHoursOnTaskElement = possibleResults[index].querySelector("[name=indicatorSumRealExpense] > span").innerHTML;
+            if(alreadyBookedHoursOnTaskElement != null){
+                alreadyBookedHoursOnTask = Number(possibleResults[index].querySelector("[name=indicatorSumRealExpense] > span").innerHTML.replace("h", ""));
+            }
+            const leftTimeOnTask = allowedTotalHoursOnTask - alreadyBookedHoursOnTask;
+
+            // check if time has number format
+            if(!Number.isInteger(time)){
+                time = Number(time.replace(",", "."));
+            }
+
+            if (time > leftTimeOnTask) {
+                // paste only the maximum allowed
+                possibleResults[index].querySelectorAll(".textfield.number")[2].value = leftTimeOnTask;
+                await setCommentAndTime(noTimeOnTicketTask, "", comment, time - leftTimeOnTask);
+            } else {
+                // paste the wasted time
+                possibleResults[index].querySelectorAll(".textfield.number")[2].value = time;
+            }
             taskFound = true;
         }
         return taskFound;
     }
     const setCommentAndTime = async function (ticket, ticketType, comment, time) {
-        var taskOptions = document.querySelectorAll(".row.default.selectableRow");
-        var taskFound = false;
-        var newRowAdded = false;
-        var possibleResults = [];
+        const taskOptions = document.querySelectorAll(".row.default.selectableRow");
+        let taskFound = false;
+        const possibleResults = [];
         taskOptions.forEach(function (task, index) {
             // try to find the correct task
-            var projectInformationFields = task.querySelectorAll(".hover.toBlur");
+            const projectInformationFields = task.querySelectorAll(".hover.toBlur");
             if (projectInformationFields.length > 2) {
-                var taskName = task.querySelectorAll(".hover.toBlur")[2].innerHTML.toLowerCase();
+                const taskName = task.querySelectorAll(".hover.toBlur")[2].innerHTML.toLowerCase();
                 if (taskName.includes(ticket) && taskName.includes(ticketType)) {
                     possibleResults.push(task);
                 }
@@ -210,7 +232,7 @@
 
         if (taskFound) {
             // if task could be found, then submit the result
-            //document.querySelector("[data-bcs-submit-button=true]").click();
+            document.querySelector("[data-bcs-submit-button=true]").click();
         } else {
             taskFound = await setCommentAndTime(ticket, ticketType, comment, time);
             if (!taskFound) {
