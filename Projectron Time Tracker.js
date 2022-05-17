@@ -25,7 +25,7 @@
         if (document.referrer == '') {
             Object.defineProperty(document, "referrer", {
                 get: function () {
-                   // return "https://mitarbeiter.neusta.de/timesheet?book_search%20list::refinement::Test%20automation%20booking::8.00::2022-05-16";
+                    // return "https://mitarbeiter.neusta.de/timesheet?book_search%20list::refinement::Test%20automation%20booking::8.00::2022-05-16";
                 }
             });
         }
@@ -179,13 +179,13 @@
             const allowedTotalHoursOnTask = Number(possibleResults[index].querySelector("[name=indicatorSumDedicatedExpense]").innerHTML.replace("h", ""));
             let alreadyBookedHoursOnTask = 0;
             const alreadyBookedHoursOnTaskElement = possibleResults[index].querySelector("[name=indicatorSumRealExpense] > span").innerHTML;
-            if(alreadyBookedHoursOnTaskElement != null){
-                alreadyBookedHoursOnTask = Number(possibleResults[index].querySelector("[name=indicatorSumRealExpense] > span").innerHTML.replace("h", ""));
+            if (alreadyBookedHoursOnTaskElement != null) {
+                alreadyBookedHoursOnTask = Number(alreadyBookedHoursOnTaskElement.replace("h", ""));
             }
             const leftTimeOnTask = allowedTotalHoursOnTask - alreadyBookedHoursOnTask;
 
             // check if time has number format
-            if(!Number.isInteger(time)){
+            if (!Number.isInteger(time)) {
                 time = Number(time.replace(",", "."));
             }
 

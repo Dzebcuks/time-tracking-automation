@@ -59,7 +59,7 @@
         press(document.querySelectorAll(TIME_MINUTE)[0], match[2].split("")[0]);
         press(document.querySelectorAll(TIME_MINUTE)[0], match[2].split("")[1]);
         // Add Pause
-        match[5] ? document.querySelector(PAUSE).value = match[2] : console.info("no pause");
+        match[5] ? document.querySelector(PAUSE).value = match[5] : console.info("no pause");
         document.querySelector(PAUSE).dispatchEvent(new Event("input"));
         document.querySelector(PAUSE).dispatchEvent(new Event("change"));
 
