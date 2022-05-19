@@ -25,7 +25,7 @@
         if (document.referrer == '') {
             Object.defineProperty(document, "referrer", {
                 get: function () {
-                    // return "https://mitarbeiter.neusta.de/timesheet?book_search%20list::refinement::Test%20automation%20booking::8.00::2022-05-16";
+                    //return "https://mitarbeiter.neusta.de/timesheet?book_PIM%20::refinement::Produktdaten,%20Konzept%20Produktmodellierung%20SAP%20CC::3.50::2022-05-10"
                 }
             });
         }
@@ -48,8 +48,8 @@
                 */
                 const autoBookEnabled = hashString.indexOf("enableJiraAutoBooking=true") != -1;
                 const entry = hashString.split("::");
-                const ticket = entry[0];
-                const ticketType = entry[1];
+                const ticket = decodeURI(entry[0]).trim();
+                const ticketType = entry[1].trim();
                 const time = entry[3].replace(".", ",");
                 let comment = "";
                 let dateStarted = "";
@@ -114,26 +114,26 @@
         if (dateMatch) {
             const year = dateMatch[1];
             const month = dateMatch[2];
-            const day = dateMatch[3];
+            let day = dateMatch[3];
+            if (day.startsWith("0")) {
+                day = day.substring(1);
+            }
 
             const dateStartedInCorrectFormat = day + "." + month + "." + year.substring(2);
             if (!currentDate.includes(dateStartedInCorrectFormat)) {
                 console.log("choosing different date");
                 // open date dialog first
-                datePicker.click(function () {
-                    alert("test");
-                });
+                datePicker.click();
                 await wait(200);
 
                 // search correct day
                 console.log(day);
                 const days = document.querySelectorAll(".day > a");
-                console.log(days);
-                days.forEach(async function (dayElement, index) {
-                    console.log(dayElement.innerText)
+                days.forEach(function (dayElement, index) {
                     if (dayElement.innerText == day) {
                         saveDateInLocalStorage(ticket, ticketType, time, comment, dateStarted);
                         dayElement.click();
+                        console.log("found date to switch" + dayElement.innerText)
                     }
                 });
             } else {
@@ -166,60 +166,85 @@
     const addNewTimeBookingRowOrFillTimeAndComment = async function (possibleResults, index, comment, time) {
         let taskFound = false;
         const commentTextArea = possibleResults[index].querySelectorAll("textArea")[0];
-        if (commentTextArea.value != "") {
-            // add a new row
-            const addNewRowButton = possibleResults[index].querySelector("button[title='Zeile hinzufügen.']");
-            if (addNewRowButton) {
-                addNewRowButton.click()
-            }
-        } else {
-            possibleResults[index].querySelectorAll("textArea")[0].value = comment;
-
+        if (commentTextArea.value === "") {
             // check if left time on task is possible within current booking
+            let leftTimeOnTask = Number.MAX_SAFE_INTEGER;
             const allowedTotalHoursOnTask = Number(possibleResults[index].querySelector("[name=indicatorSumDedicatedExpense]").innerHTML.replace("h", ""));
             let alreadyBookedHoursOnTask = 0;
-            const alreadyBookedHoursOnTaskElement = possibleResults[index].querySelector("[name=indicatorSumRealExpense] > span").innerHTML;
+            const alreadyBookedHoursOnTaskElement = possibleResults[index].querySelector("[name=indicatorSumRealExpense] > span");
             if (alreadyBookedHoursOnTaskElement != null) {
-                alreadyBookedHoursOnTask = Number(alreadyBookedHoursOnTaskElement.replace("h", ""));
+                const alreadyBookedHoursOnTaskValue = possibleResults[index].querySelector("[name=indicatorSumRealExpense] > span").innerHTML;
+                if (alreadyBookedHoursOnTaskValue != null) {
+                    alreadyBookedHoursOnTask = Number(alreadyBookedHoursOnTaskValue.replace("h", "").replace(",", "."));
+                }
+                leftTimeOnTask = allowedTotalHoursOnTask - alreadyBookedHoursOnTask;
             }
-            const leftTimeOnTask = allowedTotalHoursOnTask - alreadyBookedHoursOnTask;
 
             // check if time has number format
             if (!Number.isInteger(time)) {
-                time = Number(time.replace(",", "."));
+                time = Number(String(time).replace(",", "."));
             }
 
             if (time > leftTimeOnTask) {
                 // paste only the maximum allowed
-                possibleResults[index].querySelectorAll(".textfield.number")[2].value = leftTimeOnTask;
+                if (leftTimeOnTask > 0) {
+                    possibleResults[index].querySelectorAll(".textfield.number")[2].value = String(leftTimeOnTask).replace(".", ",");
+                    possibleResults[index].querySelectorAll("textArea")[0].value = comment;
+                }
                 await setCommentAndTime(noTimeOnTicketTask, "", comment, time - leftTimeOnTask);
             } else {
                 // paste the wasted time
-                possibleResults[index].querySelectorAll(".textfield.number")[2].value = time;
+                possibleResults[index].querySelectorAll(".textfield.number")[2].value = String(time).replace(".", ",");
+                ;
+                possibleResults[index].querySelectorAll("textArea")[0].value = comment;
             }
             taskFound = true;
         }
         return taskFound;
     }
-    const setCommentAndTime = async function (ticket, ticketType, comment, time) {
+
+    const addNewRowIfRequired = async function (possibleResults) {
+        const addNewRowButton = possibleResults[0].querySelector("button[title='Zeile hinzufügen.']");
+        if (addNewRowButton) {
+            addNewRowButton.click();
+        }
+    }
+
+    const findPossibleTasks = async function (ticket, ticketType) {
         const taskOptions = document.querySelectorAll(".row.default.selectableRow");
-        let taskFound = false;
         const possibleResults = [];
         taskOptions.forEach(function (task, index) {
             // try to find the correct task
             const projectInformationFields = task.querySelectorAll(".hover.toBlur");
             if (projectInformationFields.length > 2) {
-                const taskName = task.querySelectorAll(".hover.toBlur")[2].innerHTML.toLowerCase();
+                const taskName = task.querySelectorAll(".hover.toBlur")[3].innerHTML.toLowerCase();
                 if (taskName.includes(ticket) && taskName.includes(ticketType)) {
                     possibleResults.push(task);
                 }
             }
         });
+        return possibleResults;
+    }
 
-        if (possibleResults.length == 1) {
-            taskFound = await addNewTimeBookingRowOrFillTimeAndComment(possibleResults, 0, comment, time);
+    const setCommentAndTime = async function (ticket, ticketType, comment, time) {
+        let taskFound = false;
+        console.log("search ticket where " + ticket + " and " + ticketType + " is included")
+        let possibleResults = await findPossibleTasks(ticket, ticketType);
+
+        if (possibleResults.length === 1) {
+            const commentTextArea = possibleResults[0].querySelectorAll("textArea")[0];
+            if (commentTextArea.value !== "") {
+                // add a new row
+                await addNewRowIfRequired(possibleResults);
+                possibleResults = await findPossibleTasks(ticket, ticketType);
+                taskFound = await addNewTimeBookingRowOrFillTimeAndComment(possibleResults, 1, comment, time);
+            } else {
+                taskFound = await addNewTimeBookingRowOrFillTimeAndComment(possibleResults, 0, comment, time);
+
+            }
         } else if (possibleResults.length > 1) {
-            await addNewTimeBookingRowOrFillTimeAndComment(possibleResults, 0, comment, time);
+            await addNewRowIfRequired(possibleResults);
+            possibleResults = await findPossibleTasks(ticket, ticketType);
             taskFound = await addNewTimeBookingRowOrFillTimeAndComment(possibleResults, 1, comment, time);
         }
         return taskFound;
