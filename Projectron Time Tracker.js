@@ -217,7 +217,7 @@
             // try to find the correct task
             const projectInformationFields = task.querySelectorAll(".hover.toBlur");
             if (projectInformationFields.length > 2) {
-                const taskName = task.querySelectorAll(".hover.toBlur")[3].innerHTML.toLowerCase();
+                const taskName = task.querySelectorAll(".hover.toBlur")[2].innerHTML.toLowerCase();
                 if (taskName.includes(ticket) && taskName.includes(ticketType)) {
                     possibleResults.push(task);
                 }
