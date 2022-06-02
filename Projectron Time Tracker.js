@@ -25,7 +25,7 @@
         if (document.referrer == '') {
             Object.defineProperty(document, "referrer", {
                 get: function () {
-                    //return "https://mitarbeiter.neusta.de/timesheet?book_PIM%20::refinement::Produktdaten,%20Konzept%20Produktmodellierung%20SAP%20CC::3.50::2022-05-10"
+                    //  return "https://mitarbeiter.neusta.de/timesheet?book_Product%20List%20::refinement::Backlog%20Refinement::1.00::2022-06-02"
                 }
             });
         }
@@ -163,17 +163,26 @@
         }
         return messageFound;
     }
+    const getHoursValueOfElement = function (element) {
+        let value = element.innerHTML;
+        if (value.includes("span")) {
+            value = element.innerText;
+        }
+        return value;
+    }
     const addNewTimeBookingRowOrFillTimeAndComment = async function (possibleResults, index, comment, time) {
         let taskFound = false;
         const commentTextArea = possibleResults[index].querySelectorAll("textArea")[0];
         if (commentTextArea.value === "") {
+            const allowOverbooking = possibleResults[index].innerHTML.toLowerCase().includes(noTimeOnTicketTask);
             // check if left time on task is possible within current booking
             let leftTimeOnTask = Number.MAX_SAFE_INTEGER;
-            const allowedTotalHoursOnTask = Number(possibleResults[index].querySelector("[name=indicatorSumDedicatedExpense]").innerHTML.replace("h", ""));
+            let allowedTotalHoursOnTaskElement = possibleResults[index].querySelector("[name=indicatorSumDedicatedExpense]");
+            const allowedTotalHoursOnTask = Number(getHoursValueOfElement(allowedTotalHoursOnTaskElement).replace("h", ""));
             let alreadyBookedHoursOnTask = 0;
             const alreadyBookedHoursOnTaskElement = possibleResults[index].querySelector("[name=indicatorSumRealExpense] > span");
             if (alreadyBookedHoursOnTaskElement != null) {
-                const alreadyBookedHoursOnTaskValue = possibleResults[index].querySelector("[name=indicatorSumRealExpense] > span").innerHTML;
+                const alreadyBookedHoursOnTaskValue = getHoursValueOfElement(alreadyBookedHoursOnTaskElement);
                 if (alreadyBookedHoursOnTaskValue != null) {
                     alreadyBookedHoursOnTask = Number(alreadyBookedHoursOnTaskValue.replace("h", "").replace(",", "."));
                 }
@@ -185,7 +194,7 @@
                 time = Number(String(time).replace(",", "."));
             }
 
-            if (time > leftTimeOnTask) {
+            if (time > leftTimeOnTask && !allowOverbooking) {
                 // paste only the maximum allowed
                 if (leftTimeOnTask > 0) {
                     possibleResults[index].querySelectorAll(".textfield.number")[2].value = String(leftTimeOnTask).replace(".", ",");
@@ -195,7 +204,6 @@
             } else {
                 // paste the wasted time
                 possibleResults[index].querySelectorAll(".textfield.number")[2].value = String(time).replace(".", ",");
-                ;
                 possibleResults[index].querySelectorAll("textArea")[0].value = comment;
             }
             taskFound = true;
