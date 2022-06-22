@@ -25,7 +25,7 @@
         if (document.referrer == '') {
             Object.defineProperty(document, "referrer", {
                 get: function () {
-                    //  return "https://mitarbeiter.neusta.de/timesheet?book_Product%20List%20::refinement::Backlog%20Refinement::1.00::2022-06-02"
+                    // return "https://mitarbeiter.neusta.de/timesheet?book_base%20setup%20::implementation::Analysen%20zu%20Stock,%20Entry%20Numbers,%20Solr...::4.50::2022-06-22"
                 }
             });
         }
@@ -178,7 +178,7 @@
             // check if left time on task is possible within current booking
             let leftTimeOnTask = Number.MAX_SAFE_INTEGER;
             let allowedTotalHoursOnTaskElement = possibleResults[index].querySelector("[name=indicatorSumDedicatedExpense]");
-            const allowedTotalHoursOnTask = Number(getHoursValueOfElement(allowedTotalHoursOnTaskElement).replace("h", ""));
+            const allowedTotalHoursOnTask = Number(getHoursValueOfElement(allowedTotalHoursOnTaskElement).replace("h", "").replace(",", "."));
             let alreadyBookedHoursOnTask = 0;
             const alreadyBookedHoursOnTaskElement = possibleResults[index].querySelector("[name=indicatorSumRealExpense] > span");
             if (alreadyBookedHoursOnTaskElement != null) {
