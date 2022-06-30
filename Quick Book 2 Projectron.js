@@ -11,7 +11,7 @@
 (function () {
     'use strict';
     const internalRegex = /^(\d\d):(\d\d)\s+(\d\d):(\d\d)\s+(\d?\d?.?\d?\d)?\s?(.+)$/;
-    const regex = /^(\d\d):(\d\d)\s+(\d\d):(\d\d)\s+(\d?\d?.?\d?\d)?\s?(.*)(refine|impl|meeting)\s?(.+)$/;
+    const regex = /^(\d\d):(\d\d)\s+(\d\d):(\d\d)\s+(\d?\d?.?\d?\d)?\s?(.*)(refine|impl|meeting|time)\s?(.+)$/;
     const REFINEMENT = "refinement";
     const IMPLEMENTATION = "implementation";
     const MEETING = "meeting";
@@ -136,7 +136,7 @@
                     } else if (ticketType == "meeting") {
                         shortBookingNote = shortBookingNote + "::" + MEETING;
                     } else {
-                        shortBookingNote = shortBookingNote + "::" + "unknown ticket type";
+                        shortBookingNote = shortBookingNote + "::" + ticketType;
                     }
                 }
                 shortBookingNote = shortBookingNote + "::" + comment + "::" + bookedTime;
