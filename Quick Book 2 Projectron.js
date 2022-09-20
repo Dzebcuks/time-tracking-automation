@@ -125,7 +125,7 @@
                     }
                 }
                 // get calculated time from mitarbeiter tool, as it has same format as jira
-                var bookedTime = document.querySelectorAll(".cdk-text-field-autofill-monitored")[2].value;
+                var bookedTime = document.querySelectorAll(".c-tag__label-title--secondary")[0].textContent.replace("+", "").trim();
                 // get ticket and comment if available
                 var shortBookingNote = projectronTicket;
                 if (ticketType != "") {
@@ -147,8 +147,10 @@
                 if (enableJiraAutoBooking) {
                     shortBookingNote = shortBookingNote + ";?enableJiraAutoBooking=true";
                 }
-                console.log(shortBookingNote);
-                window.history.pushState({}, null, "/timesheet?book_" + shortBookingNote);
+                console.info(shortBookingNote);
+                window.history.pushState(null, '', "/timesheet?book_" + shortBookingNote);
+                console.info(projektronUrl);
+                console.info(shortBookingNote);
                 var newWindow = window.open(projektronUrl);
             }
         }
@@ -207,6 +209,8 @@
                 input.addEventListener('blur', (event) => {
                     addFromTextArea(event.target.value)
                 });
+                // change referrer policy...
+                document.querySelectorAll("[name=referrer]")[0].setAttribute("content", "unsafe-url")
             }
         }, 100)
     }

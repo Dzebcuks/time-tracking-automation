@@ -21,11 +21,11 @@
     const noTimeOnTicketTask = "no time on ticket";
 
     const bookTime = async function () {
-        console.log(document.referrer)
+        console.info(document.referrer)
         if (document.referrer == '') {
             Object.defineProperty(document, "referrer", {
                 get: function () {
-                    // return "https://mitarbeiter.neusta.de/timesheet?book_base%20setup%20::implementation::Analysen%20zu%20Stock,%20Entry%20Numbers,%20Solr...::4.50::2022-06-22"
+                    // return "https://mitarbeiter.neusta.de/timesheet?book_no%20::time::Unterst%C3%BCtzung::3::2022-08-18"
                 }
             });
         }
