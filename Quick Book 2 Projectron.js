@@ -71,7 +71,7 @@
         document.querySelector(COMMENT).dispatchEvent(new Event("input"))
         await wait(200);
         // Open Projekt Selection
-        document.querySelectorAll("[cdk-overlay-origin]")[1].dispatchEvent(new Event("click"))
+        document.querySelectorAll("[cdk-overlay-origin]")[2].dispatchEvent(new Event("click"))
         await wait(300);
         // Try to find correct project, otherwise fallback to first one
         var projectOption = 0;
@@ -99,7 +99,7 @@
         // Click on second time option
         var options = document.querySelectorAll("[cdk-overlay-origin]")
         if (options.length > 2) {
-            document.querySelectorAll("[cdk-overlay-origin]")[2].dispatchEvent(new Event("click"))
+            document.querySelectorAll("[cdk-overlay-origin]")[3].dispatchEvent(new Event("click"))
             await wait(100);
             document.querySelectorAll("mat-option")[0].dispatchEvent(new Event("click"))
         }
