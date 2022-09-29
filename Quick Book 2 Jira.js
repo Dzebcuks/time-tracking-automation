@@ -22,8 +22,8 @@
     var COMMENT = "textarea";
     var COMMENT_INPUT = COMMENT + "+input";
     var DATE = "[formcontrolname='spentOn']";
-    var enableJiraBooking = false;
-    var enableJiraAutoBooking = false;
+    var enableJiraBooking = true;
+    var enableJiraAutoBooking = true;
     var currentProjectPrefixes = ["HUB", "Valantic"];
     var currentProject = /Huber.*/i;
     var sapCommerceGeneral = /SAP Commerce Bereich intern/i
@@ -55,22 +55,22 @@
             document.querySelector(COMMENT).dispatchEvent(new Event("input"))
             await wait(200);
             // Open Projekt Selection
-            document.querySelectorAll("[cdk-overlay-origin]")[1].dispatchEvent(new Event("click"))
+            document.querySelectorAll("[cdk-overlay-origin]")[2].dispatchEvent(new Event("click"))
             await wait(300);
             // Try to find correct project, otherwise fallback to first one
             var projectOption = 0;
             var allProjectOptions = document.querySelectorAll(".mat-option-text")
             console.info(comment)
             console.info(currentProjectPrefixes)
-            allProjectOptions.forEach(function(project, index){
-                if(currentProjectPrefixes.some(prefix=>comment.includes(prefix))){
+            allProjectOptions.forEach(function (project, index) {
+                if (currentProjectPrefixes.some(prefix => comment.includes(prefix))) {
                     console.info(project.innerText)
-                    if(currentProject.test(project.innerText)){
+                    if (currentProject.test(project.innerText)) {
                         console.info("its a match " + project.innerText)
                         projectOption = index;
                     }
                 } else {
-                    if(sapCommerceGeneral.test(project.innerText)){
+                    if (sapCommerceGeneral.test(project.innerText)) {
                         projectOption = index;
                     }
                 }
@@ -80,8 +80,8 @@
             await wait(100);
             // Click on second time option
             var options = document.querySelectorAll("[cdk-overlay-origin]")
-            if(options.length > 2){
-                document.querySelectorAll("[cdk-overlay-origin]")[2].dispatchEvent(new Event("click"))
+            if (options.length > 3) {
+                document.querySelectorAll("[cdk-overlay-origin]")[3].dispatchEvent(new Event("click"))
                 await wait(100);
                 document.querySelectorAll("mat-option")[0].dispatchEvent(new Event("click"))
             }
@@ -92,29 +92,29 @@
             if (getIndexForActivity(match[6]) >= 0) {
                 document.querySelectorAll("mat-option")[getIndexForActivity(match[6])].dispatchEvent(new Event("click"))
             }
-            if(enableJiraBooking){
+            if (enableJiraBooking) {
                 const commentMatch = commentRegex.exec(comment);
-                if(commentMatch){
+                if (commentMatch) {
                     // get date of booking and parse it to required format
                     var date = document.querySelector(DATE).value;
                     var dateString = "";
                     const dateMatch = dateRegex.exec(date);
-                    if(dateMatch){
+                    if (dateMatch) {
                         const days = dateMatch[1];
                         const month = dateMatch[2];
                         const year = dateMatch[3];
-                        if(days && month && year){
+                        if (days && month && year) {
                             dateString = year + "-" + month + "-" + days;
                         }
                     }
                     // get calculated time from mitarbeiter tool, as it has same format as jira
-                    var bookedTime = document.querySelectorAll(".cdk-text-field-autofill-monitored")[2].value;
+                    var bookedTime = document.querySelectorAll(".c-tag__label-title--secondary")[0].textContent.replace("+", "").trim();
                     // get ticket and comment if available
-                    var jiraUrl = jiraBaseUrl + commentMatch[1]+ "::" + bookedTime;
-                    if(commentMatch.length > 2){
+                    var jiraUrl = jiraBaseUrl + commentMatch[1] + "::" + bookedTime;
+                    if (commentMatch.length > 2) {
                         jiraUrl = jiraUrl + "::" + commentMatch[2];
                     }
-                    if(dateString){
+                    if (dateString) {
                         jiraUrl = jiraUrl + "::" + dateString;
                     }
                     if (enableJiraAutoBooking) {
@@ -140,7 +140,7 @@
         if (activity.indexOf("Code Reviews") >= 0) {
             return 1;
         }
-        if (activity.indexOf("CUSI") >= 0){
+        if (activity.indexOf("CUSI") >= 0) {
             return 5;
         }
     }
