@@ -98,7 +98,7 @@
         await wait(100);
         // Click on second time option
         var options = document.querySelectorAll("[cdk-overlay-origin]")
-        if (options.length > 2) {
+        if (options.length > 3) {
             document.querySelectorAll("[cdk-overlay-origin]")[3].dispatchEvent(new Event("click"))
             await wait(100);
             document.querySelectorAll("mat-option")[0].dispatchEvent(new Event("click"))
