@@ -22,7 +22,7 @@
     var TIME_HOUR = ".ngx-timepicker__control--first input";
     var TIME_MINUTE = ".ngx-timepicker__control--third input";
     var HOURS = "[data-placeholder=Stunden]";
-    var PAUSE = "[data-placeholder=Pause]";
+    var PAUSE = "[placeholder=Pause]";
     var COMMENT = "textarea";
     var COMMENT_INPUT = COMMENT + "+input";
     var DATE = "[formcontrolname='spentOn']";
@@ -30,7 +30,7 @@
     var enableJiraAutoBooking = false;
     var currentProjectPrefixes = ["HUB", "Valantic"];
     var currentProject = /Huber.*/i;
-    var sapCommerceGeneral = /SAP Commerce Bereich intern/i
+    var sapCommerceGeneral = /interne Themen/i
     // jira url should be start page in order to show overlay. #book_ is the required suffix for other plugin to work
     var projektronUrl = "https://projektron.valantic.com/bcs/mybcs/dayeffortrecording/display?#book_";
     const addFromTextArea = async function (entry) {
@@ -75,7 +75,7 @@
         await wait(300);
         // Try to find correct project, otherwise fallback to first one
         var projectOption = 0;
-        var allProjectOptions = document.querySelectorAll(".mat-option-text")
+        var allProjectOptions = document.querySelectorAll("mat-option")
         console.info(comment)
         console.info(currentProjectPrefixes)
         allProjectOptions.forEach(function (project, index) {
@@ -98,7 +98,7 @@
         await wait(100);
         // Click on second time option
         var options = document.querySelectorAll("[cdk-overlay-origin]")
-        if (options.length > 2) {
+        if (options.length > 3 && !internalBooking) {
             document.querySelectorAll("[cdk-overlay-origin]")[3].dispatchEvent(new Event("click"))
             await wait(100);
             document.querySelectorAll("mat-option")[0].dispatchEvent(new Event("click"))
@@ -205,7 +205,7 @@
                 input.id = "paste"
                 input.style = "width:100%;display:block; margin-top:10px;"
                 input.placeholder = "Paste Entry Here"
-                document.querySelector(COMMENT).parentElement.parentElement.parentElement.append(input)
+                document.querySelector(COMMENT).parentElement.parentElement.parentElement.parentElement.append(input)
                 input.addEventListener('blur', (event) => {
                     addFromTextArea(event.target.value)
                 });
